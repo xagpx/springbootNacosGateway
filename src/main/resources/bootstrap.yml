@@ -1,0 +1,86 @@
+spring:
+  redis:
+    host: 111.7.172.183
+    port: 18081
+    database: 0
+    password: 123456
+  cloud:
+     nacos:
+         config:
+            server-addr: 127.0.0.1:8848
+            namespace: 3ad4f00e-3725-4ce6-babe-631768e9e589
+            file-extension: yml
+            prefix: nacos-gateway
+            group: DEV_GROUP
+#           shared-dataids: test.yml,a.yml
+#           refreshable-dataids: test.yml,a.yml
+         discovery: 
+            server-addr: 127.0.0.1:8848
+            namespace: 3ad4f00e-3725-4ce6-babe-631768e9e589
+            group: DEV_GROUP
+     gateway:
+      enabled: true
+      discovery:
+        locator:
+#          enabled: true
+          lowerCaseServiceId: true
+      routes:
+        - id: prefixpath_route
+          uri: lb://nacos-consumer
+          predicates:
+          - Path=/test/b
+          filters:
+          - PrefixPath=/a
+#          - StripPrefix= 1
+#          - name: RateCheck
+#            args:
+#              keyResolver: UriKeyResolver
+#              #允许用户每秒处理多少个请求
+#              redis-rate-limiter.replenishRate: 1
+#              #用户在一秒钟内允许执行的最大请求数
+#              redis-rate-limiter.burstCapacity: 1
+          
+        - id: route_simple
+          uri: lb://nacos-gateway
+          predicates:
+          - Path=/abc
+          filters:
+          - PrefixPath=/a
+#          #gateway限流
+#          - name: RequestRateLimiter
+#            args:
+#              key-resolver: '#{@uriKeyResolver}'
+#              #允许用户每秒处理多少个请求
+#              redis-rate-limiter.replenishRate: 1
+#              #用户在一秒钟内允许执行的最大请求数
+#              redis-rate-limiter.burstCapacity: 1
+#         ## 熔断name表示HystrixCommand代码的名称，fallbackUri表示触发断路由后的跳转请求url
+#          - name: Hystrix
+#            args:
+#              name: fallbackcmd
+#              ### fallback 时调用的方法 http://localhost:8000/fallback
+#              fallbackUri: forward:/fallback
+     sentinel:
+        transport:
+        # 项目本地会启动一个服务的端口号，默认8719，用于与sentinel-dashboard通讯
+#          port: 8720
+          dashboard: 127.0.0.1:8060
+        heartbeat-interval-ms: 500
+        filter: 
+          enabled: true
+        datasource: 
+          ds2:  
+            nacos:  
+              server-addr: localhost:8848
+              namespace: 3ad4f00e-3725-4ce6-babe-631768e9e589
+              data-id: nacos-gateway-sentinel
+              group-id: DEFAULT_GROUP
+              data-type: json
+              rule-type: flow
+#设置断路由的超时时间，毫秒
+hystrix:
+  command:
+    default:
+      execution:
+        isolation:
+          thread: timeoutInMilliseconds= 30000
